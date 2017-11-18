@@ -178,11 +178,20 @@ function processMessageFromPage(event) {
         // handle 'help' as a special case
         sendHelpOptionsAsQuickReplies(senderID);
         break;
-      case 'cool':
-        sendCoolOptionsAsQuickReplies(senderID);
+      case 'ticket':
+        sendTicketOptionsAsQuickReplies(senderID);
         break;
       case 'test':
         sendTestOptions(senderID);
+        break;
+      case '':
+        sentTaskComplete(senderID);
+        break;
+      case 'check block':
+        checkBlock(senderID);
+        break;
+      case 'block time':
+        blockTime(senderID, messageText);
         break;
       default:
         // otherwise, just echo it back to the sender
@@ -230,20 +239,26 @@ function sendHelpOptionsAsQuickReplies(recipientId) {
   };
   callSendAPI(messageData);
 }
-function sendCoolOptionsAsQuickReplies(recipientId) {
-  console.log("[sendCoolOptionsAsQuickReplies] Sending cool options menu"); 
+
+function sendTicketOptionsAsQuickReplies(recipientId) {
+  console.log("[sendTicketOptionsAsQuickReplies] Sending ticket options menu"); 
   var messageData = {
     recipient: {
       id: recipientId
     },
     message: {
-      text: "This is going to be fun",
+      text: "What do you want to do with your ticket?",
       quick_replies: [
         { 
           "content_type":"text",
-          "title":"Cool Jams",
-          "payload":"QR_ROTATION_1" 
+          "title":"Update",
+          "payload":"TX_UPDATE_1" 
         },
+        { 
+          "content_type":"text",
+          "title":"Check Tickets",
+          "payload":"TX_CHECK_1" 
+        }
       ]
     }
   };
@@ -258,6 +273,49 @@ function sendTestOptions(recipientId) {
     },
     message: {
       text: "This is a test. Testing 1, 2, 4...."
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function sentTaskComplete(recipientId) {
+  console.log("[sendTask] Sent Task Complete test options"); 
+  // make some sort of api call toe the email
+  // notify the PM that the task is complete and move ticket to other portion 
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "Task is complete, GREAT!"
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function blockTime(recipientId, messsageText) {
+  console.log("[blockTime] Time blocked off"); 
+  // call a function to clock a user out on their calendar. 
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "2 hours have been blocked off."
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function checkBlock(recipientId, messsageText) {
+  console.log("[checkBlock] checkBlock of time"); 
+  // call a function to clock a user out on their calendar. 
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "This is the time! 1900 hours"
     }
   };
   callSendAPI(messageData);
@@ -292,7 +350,8 @@ function respondToHelpRequest(senderID, payload) {
     // respond to the sender's help request by presenting a carousel-style 
     // set of screenshots of the application in action 
     // each response includes all the content for the requested feature
-    messageData = getGenericTemplates(senderID, payload);
+    // messageData = getGenericTemplates(senderID, payload);
+    messageData = getTasks(senderID, payload);
   } else {
     // respond to the help request by presenting one image at a time
     messageData = getImageAttachments(senderID, payload);
@@ -308,6 +367,95 @@ function respondToHelpRequest(senderID, payload) {
  * left and right to see it
  *
  */
+function getTasks(recipientId, requestForHelpOnFeature) {
+  console.log("[getGenericTemplates] handling help request for %s",
+    requestForHelpOnFeature);
+  var taskElements = [];
+  var sectionButtons = [];
+  var status = ['complete', 'in progress', 'not started'];
+  function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+  // each button must be of type postback but title
+  // and payload are variable depending on which 
+  // set of options you want to provide
+  var addSectionButton = function(title, payload) {
+    sectionButtons.push({
+      type: 'postback',
+      title: title,
+      payload: payload
+    });
+  }
+
+  // Since there are only four options in total, we will provide 
+  // buttons for each of the remaining three with each section. 
+  // This provides the user with maximum flexibility to navigate
+
+  switch (requestForHelpOnFeature) {
+    case 'TX_UPDATE_1':
+      addSectionButton('Update', 'TX_UPDATE_1');
+      addSectionButton('View', 'TX_CHECK_1');
+      // addSectionButton('Background', 'QR_BACKGROUND_1');
+      
+      taskElements.push(
+        {
+          title: "Ticket 1",
+          subtitle: status[Math.floor(getRandomArbitrary(0,3))],
+          // image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
+          buttons: sectionButtons 
+        }, 
+        {
+          title: "Ticket 2",
+          subtitle: status[Math.floor(getRandomArbitrary(0,3))],
+          // image_url: IMG_BASE_PATH + "02-rotate-portrait.png",
+          buttons: sectionButtons 
+        }
+      );
+    break; 
+    case 'TX_CHECK_1':
+      addSectionButton('Update', 'TX_UPDATE_1');
+      addSectionButton('View', 'TX_CHECK_1');
+      // addSectionButton('Background', 'QR_BACKGROUND_1');
+
+      taskElements.push(
+        {
+          title: "Ticket 1",
+          subtitle: status[Math.floor(Math.random(0, 2))],
+          // image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
+          buttons: sectionButtons 
+        }, 
+        {
+          title: "Ticket 2",
+          subtitle: "Complete",
+          // image_url: IMG_BASE_PATH + "02-rotate-portrait.png",
+          buttons: sectionButtons 
+        }      
+      );
+    break; 
+  }
+
+  if (taskElements.length < 2) {
+    console.error("each template should have at least two elements");
+  }
+  
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: taskElements
+        }
+      }
+    }
+  };
+
+  return messageData;
+}
+
 function getGenericTemplates(recipientId, requestForHelpOnFeature) {
   console.log("[getGenericTemplates] handling help request for %s",
     requestForHelpOnFeature);
