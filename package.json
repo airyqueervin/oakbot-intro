@@ -27,6 +27,7 @@
     "mongodb": "^2.2.33",
     "mongoose": "^4.13.4",
     "nodemailer": "^4.4.0",
+    "node-schedule": "^1.2.5",
     "request": "^2.83.0"
   }
 }

@@ -163,6 +163,7 @@ const
     respondToHelpRequest(senderID, payload);
   }
 
+<<<<<<< HEAD
   /*
    * Called when a message is sent to your page.
    *
@@ -199,6 +200,37 @@ const
           // otherwise, just echo it back to the sender
           sendTextMessage(senderID, messageText);
       }
+=======
+  // the 'message' object format can vary depending on the kind of message that was received.
+  // See: https://developers.facebook.com/docs/messenger-platform/webhook-reference/message-received
+  var messageText = message.text;
+  if (messageText) {
+    console.log("[processMessageFromPage]: %s", messageText);
+    var lowerCaseMsg = messageText.toLowerCase();
+    switch (lowerCaseMsg) {
+      case 'help':
+        // handle 'help' as a special case
+        sendHelpOptionsAsQuickReplies(senderID);
+        break;
+      case 'ticket':
+        sendTicketOptionsAsQuickReplies(senderID);
+        break;
+      case 'test':
+        sendTestOptions(senderID);
+        break;
+      case '':
+        sentTaskComplete(senderID);
+        break;
+      case 'check block':
+        checkBlock(senderID);
+        break;
+      case 'block time':
+        blockTime(senderID, messageText);
+        break;
+      default:
+        // otherwise, just echo it back to the sender
+        sendTextMessage(senderID, messageText);
+>>>>>>> 6b9478d34f2bb29dc5212ab1e074bf9038325011
     }
   }
 
@@ -242,6 +274,7 @@ const
     callSendAPI(messageData);
   }
 
+<<<<<<< HEAD
   /*
    * user tapped a Quick Reply button; respond with the appropriate content
    *
@@ -251,12 +284,124 @@ const
     var pageID = event.recipient.id;
     var message = event.message;
     var payload = message.quick_reply.payload;
+=======
+function sendTicketOptionsAsQuickReplies(recipientId) {
+  console.log("[sendTicketOptionsAsQuickReplies] Sending ticket options menu");
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "What do you want to do with your ticket?",
+      quick_replies: [
+        {
+          "content_type":"text",
+          "title":"Update",
+          "payload":"TX_UPDATE_1"
+        },
+        {
+          "content_type":"text",
+          "title":"Check Tickets",
+          "payload":"TX_CHECK_1"
+        }
+      ]
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function sendTestOptions(recipientId) {
+  console.log("[sendTest] Sending test options");
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "This is a test. Testing 1, 2, 4...."
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function sentTaskComplete(recipientId) {
+  console.log("[sendTask] Sent Task Complete test options");
+  // make some sort of api call toe the email
+  // notify the PM that the task is complete and move ticket to other portion
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "Task is complete, GREAT!"
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function blockTime(recipientId, messsageText) {
+  console.log("[blockTime] Time blocked off");
+  // call a function to clock a user out on their calendar.
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "2 hours have been blocked off."
+    }
+  };
+  callSendAPI(messageData);
+}
+
+function checkBlock(recipientId, messsageText) {
+  console.log("[checkBlock] checkBlock of time");
+  // call a function to clock a user out on their calendar.
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "This is the time! 1900 hours"
+    }
+  };
+  callSendAPI(messageData);
+}
+
+/*
+ * user tapped a Quick Reply button; respond with the appropriate content
+ *
+ */
+function handleQuickReplyResponse(event) {
+  var senderID = event.sender.id;
+  var pageID = event.recipient.id;
+  var message = event.message;
+  var payload = message.quick_reply.payload;
+
+  console.log("[handleQuickReplyResponse] Handling quick reply response (%s) from sender (%d) to page (%d) with message (%s)",
+    payload, senderID, pageID, JSON.stringify(message));
+>>>>>>> 6b9478d34f2bb29dc5212ab1e074bf9038325011
 
     console.log("[handleQuickReplyResponse] Handling quick reply response (%s) from sender (%d) to page (%d) with message (%s)",
       payload, senderID, pageID, JSON.stringify(message));
 
     respondToHelpRequest(senderID, payload);
 
+/*
+ * simplify switching between the two help response implementations
+ */
+function respondToHelpRequest(senderID, payload) {
+  // set useGenericTemplates to false to send image attachments instead of generic templates
+  var useGenericTemplates = true;
+  var messageData = {};
+
+  if (useGenericTemplates) {
+    // respond to the sender's help request by presenting a carousel-style
+    // set of screenshots of the application in action
+    // each response includes all the content for the requested feature
+    // messageData = getGenericTemplates(senderID, payload);
+    messageData = getTasks(senderID, payload);
+  } else {
+    // respond to the help request by presenting one image at a time
+    messageData = getImageAttachments(senderID, payload);
   }
 
   /*
@@ -303,149 +448,115 @@ const
       });
     }
 
-    // Since there are only four options in total, we will provide
-    // buttons for each of the remaining three with each section.
-    // This provides the user with maximum flexibility to navigate
+/*
+ * This response uses templateElements to present the user with a carousel
+ * You send ALL of the content for the selected feature and they swipe
+ * left and right to see it
+ *
+ */
+function getTasks(recipientId, requestForHelpOnFeature) {
+  console.log("[getGenericTemplates] handling help request for %s",
+    requestForHelpOnFeature);
+  var taskElements = [];
+  var sectionButtons = [];
+  var status = ['complete', 'in progress', 'not started'];
+  function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+  // each button must be of type postback but title
+  // and payload are variable depending on which
+  // set of options you want to provide
+  var addSectionButton = function(title, payload) {
+    sectionButtons.push({
+      type: 'postback',
+      title: title,
+      payload: payload
+    });
+  }
 
-    switch (requestForHelpOnFeature) {
-      case 'QR_ROTATION_1':
-        addSectionButton('Photo', 'QR_PHOTO_1');
-        addSectionButton('Caption', 'QR_CAPTION_1');
-        addSectionButton('Background', 'QR_BACKGROUND_1');
+  // Since there are only four options in total, we will provide
+  // buttons for each of the remaining three with each section.
+  // This provides the user with maximum flexibility to navigate
 
-        templateElements.push(
-          {
-            title: "Rotation",
-            subtitle: "portrait mode",
-            image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Rotation",
-            subtitle: "landscape mode",
-            image_url: IMG_BASE_PATH + "02-rotate-portrait.png",
-            buttons: sectionButtons
-          }
-        );
-      break;
-      case 'QR_PHOTO_1':
-        addSectionButton('Rotation', 'QR_ROTATION_1');
-        addSectionButton('Caption', 'QR_CAPTION_1');
-        addSectionButton('Background', 'QR_BACKGROUND_1');
+  switch (requestForHelpOnFeature) {
+    case 'TX_UPDATE_1':
+      addSectionButton('Update', 'TX_UPDATE_1');
+      addSectionButton('View', 'TX_CHECK_1');
+      // addSectionButton('Background', 'QR_BACKGROUND_1');
 
-        templateElements.push(
-          {
-            title: "Photo Picker",
-            subtitle: "click to start",
-            image_url: IMG_BASE_PATH + "03-photo-hover.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Photo Picker",
-            subtitle: "Downloads folder",
-            image_url: IMG_BASE_PATH + "04-photo-list.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Photo Picker",
-            subtitle: "photo selected",
-            image_url: IMG_BASE_PATH + "05-photo-selected.png",
-            buttons: sectionButtons
-          }
-        );
-      break;
-      case 'QR_CAPTION_1':
-        addSectionButton('Rotation', 'QR_ROTATION_1');
-        addSectionButton('Photo', 'QR_PHOTO_1');
-        addSectionButton('Background', 'QR_BACKGROUND_1');
+      taskElements.push(
+        {
+          title: "Ticket 1",
+          subtitle: status[Math.floor(getRandomArbitrary(0,3))],
+          // image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
+          buttons: sectionButtons
+        },
+        {
+          title: "Ticket 2",
+          subtitle: status[Math.floor(getRandomArbitrary(0,3))],
+          // image_url: IMG_BASE_PATH + "02-rotate-portrait.png",
+          buttons: sectionButtons
+        }
+      );
+    break;
+    case 'TX_CHECK_1':
+      addSectionButton('Update', 'TX_UPDATE_1');
+      addSectionButton('View', 'TX_CHECK_1');
+      // addSectionButton('Background', 'QR_BACKGROUND_1');
 
-        templateElements.push(
-          {
-            title: "Caption",
-            subtitle: "click to start",
-            image_url: IMG_BASE_PATH + "06-text-hover.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Caption",
-            subtitle: "enter text",
-            image_url: IMG_BASE_PATH + "07-text-mid-entry.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Caption",
-            subtitle: "click OK",
-            image_url: IMG_BASE_PATH + "08-text-entry-done.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Caption",
-            subtitle: "Caption done",
-            image_url: IMG_BASE_PATH + "09-text-complete.png",
-            buttons: sectionButtons
-          }
-        );
-      break;
-      case 'QR_BACKGROUND_1':
-        addSectionButton('Rotation', 'QR_ROTATION_1');
-        addSectionButton('Photo', 'QR_PHOTO_1');
-        addSectionButton('Caption', 'QR_CAPTION_1');
+      taskElements.push(
+        {
+          title: "Ticket 1",
+          subtitle: status[Math.floor(Math.random(0, 2))],
+          // image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
+          buttons: sectionButtons
+        },
+        {
+          title: "Ticket 2",
+          subtitle: "Complete",
+          // image_url: IMG_BASE_PATH + "02-rotate-portrait.png",
+          buttons: sectionButtons
+        }
+      );
+    break;
+  }
 
-        templateElements.push(
-          {
-            title: "Background Color Picker",
-            subtitle: "click to start",
-            image_url: IMG_BASE_PATH + "10-background-picker-hover.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Background Color Picker",
-            subtitle: "click current color",
-            image_url: IMG_BASE_PATH + "11-background-picker-appears.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Background Color Picker",
-            subtitle: "select new color",
-            image_url: IMG_BASE_PATH + "12-background-picker-selection.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Background Color Picker",
-            subtitle: "click ok",
-            image_url: IMG_BASE_PATH + "13-background-picker-selection-made.png",
-            buttons: sectionButtons
-          },
-          {
-            title: "Background Color Picker",
-            subtitle: "color is applied",
-            image_url: IMG_BASE_PATH + "14-background-changed.png",
-            buttons: sectionButtons
-          }
-        );
-      break;
-    }
+  if (taskElements.length < 2) {
+    console.error("each template should have at least two elements");
+  }
 
-    if (templateElements.length < 2) {
-      console.error("each template should have at least two elements");
-    }
-
-    var messageData = {
-      recipient: {
-        id: recipientId
-      },
-      message: {
-        attachment: {
-          type: "template",
-          payload: {
-            template_type: "generic",
-            elements: templateElements
-          }
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: taskElements
         }
       }
-    };
+    }
+  };
 
-    return messageData;
+  return messageData;
+}
+
+function getGenericTemplates(recipientId, requestForHelpOnFeature) {
+  console.log("[getGenericTemplates] handling help request for %s",
+    requestForHelpOnFeature);
+  var templateElements = [];
+  var sectionButtons = [];
+  // each button must be of type postback but title
+  // and payload are variable depending on which
+  // set of options you want to provide
+  var addSectionButton = function(title, payload) {
+    sectionButtons.push({
+      type: 'postback',
+      title: title,
+      payload: payload
+    });
   }
 
   /*
