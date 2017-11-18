@@ -8,7 +8,9 @@
     "url": "git+https://github.com/devcfacebook/oakbot-intro"
   },
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "quickpush": "git add . && git commit -m \"pushing fast no need for a comment\" && git push "
   },
   "keywords": [
     "chatbot",
@@ -22,6 +24,9 @@
     "dotenv": "^4.0.0",
     "ejs": "^2.5.7",
     "express": "^4.16.2",
+    "mongodb": "^2.2.33",
+    "mongoose": "^4.13.4",
+    "nodemailer": "^4.4.0",
     "node-schedule": "^1.2.5",
     "request": "^2.83.0"
   }
