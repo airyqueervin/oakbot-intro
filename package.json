@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "quickpush": "git add . && git commit -m \"pushing fast, no need for a comment\" && git push ",
   },
   "keywords": [
     "chatbot",
