@@ -707,7 +707,9 @@ const
     console.log('email sent', req.body.ticket_number)
     sendEmail({
       email: 'ankiewicz84@gmail.com',
-      ticketNum: 'TICKET-' + req.body.ticket_number
+      ticketNum: 'TICKET-' + req.body.ticket_number,
+      ticketStatus: req.body.ticket_status,
+      ticket_description: req.body.ticket_description
     })
     res.send('email sent')
   })
