@@ -20,14 +20,15 @@
   "author": "Ife Ajiboye <ajiboyeifedayo@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.17.1",
     "body-parser": "^1.18.2",
     "dotenv": "^4.0.0",
     "ejs": "^2.5.7",
     "express": "^4.16.2",
     "mongodb": "^2.2.33",
     "mongoose": "^4.13.4",
-    "nodemailer": "^4.4.0",
     "node-schedule": "^1.2.5",
+    "nodemailer": "^4.4.0",
     "request": "^2.83.0"
   }
 }

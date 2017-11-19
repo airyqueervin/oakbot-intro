@@ -1,5 +1,14 @@
+
 'use strict';
 
+var blockTime  = require('./scheduler');
+var dataSet =   {
+        "_id": "5a10bd897a0cfa81624947be",
+        "ticket_number": 124,
+        "ticket_status": "in progress",
+        "ticket_description": "This is the coolest ticket ever, this ticket will change the world",
+        "__v": 0
+    }
 const
   bodyParser = require('body-parser'),
   config = require('./config'),
@@ -11,7 +20,7 @@ const
 
   var Mongo = require('mongodb')
   var mongoose = require('mongoose')
-
+  var axios = require('axios');
   var app = express();
   var Ticket = require('./ticketModel')
 
@@ -27,6 +36,50 @@ const
   app.use( bodyParser.urlencoded( {
     extended: false
   } ) )
+
+
+
+
+// ---------------------------------
+// API ROUTES-----
+// // ---------------------------------
+
+app.get('/email', (req, res, next) => {
+  res.render('index')
+})
+
+// Send Email
+app.post('/sendEmailTest', (req, res, next) => {
+  console.log('email sent', req.body.ticket_number)
+  sendEmail({
+    email: 'ankiewicz84@gmail.com',
+    ticketNum: req.body.ticket_number,
+    ticketStatus: req.body.ticket_status,
+    ticket_description: req.body.ticket_description
+  })
+  res.send('email sent')
+})
+
+// Create TICKET
+app.post('/createTicket', (req, res, next) => {
+  var newTicketObj = {
+    ticket_number: req.body.ticket_number,
+    ticket_status: req.body.ticket_status,
+    ticket_description: req.body.ticket_description
+  }
+  Ticket.createTicket(newTicketObj, () => {
+    // calback function
+    res.send('ticket should be created now')
+  })
+})
+
+// // Create TICKET
+app.get('/getTicket/:ticketNum', (req, res, next) => {
+  Ticket.find({ticket_number: req.params.ticketNum}).exec(function(err, ticket) {
+    res.json(ticket)
+  });
+})
+
 
 // App Dashboard > Dashboard > click the Show button in the App Secret field
 const APP_SECRET = config.appSecret;
@@ -205,7 +258,7 @@ function processMessageFromPage(event) {
         checkBlock(senderID);
         break;
       case 'block time':
-        blockTime(senderID, messageText);
+        getBlockTime(senderID, messageText);
         break;
       default:
         // otherwise, just echo it back to the sender
@@ -307,14 +360,16 @@ function sentTaskComplete(recipientId) {
   callSendAPI(messageData);
 }
 
-function blockTime(recipientId, messsageText) {
-  console.log("[blockTime] Time blocked off"); 
+function getBlockTime(recipientId, messsageText) {
+  console.log("[getBlockTime] Time blocked off"); 
   // call a function to clock a user out on their calendar. 
+  // const time = blockTime('me', '15:11-15:12', '8', 'hey');
   var messageData = {
     recipient: {
       id: recipientId
     },
     message: {
+      // text: blockTime('me', '15:11-15:12', '8', 'hey')
       text: "2 hours have been blocked off."
     }
   };
@@ -382,6 +437,14 @@ function respondToHelpRequest(senderID, payload) {
  *
  */
 function getTasks(recipientId, requestForHelpOnFeature) {
+  // request({
+  //   uri: '/getTicket/:124',
+  //   method: 'GET'
+  // })
+  axios.get('/getTicket/:124')
+  .then(data => {
+    console.log('THIS IS THE DATA: ', data)
+  })
   console.log("[getGenericTemplates] handling help request for %s",
     requestForHelpOnFeature);
   var taskElements = [];
@@ -413,8 +476,8 @@ function getTasks(recipientId, requestForHelpOnFeature) {
       
       taskElements.push(
         {
-          title: "Ticket 1",
-          subtitle: status[Math.floor(getRandomArbitrary(0,3))],
+          title: dataSet.ticket_number,
+          subtitle: dataSet.ticket_status,
           // image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
           buttons: sectionButtons 
         }, 
@@ -433,7 +496,7 @@ function getTasks(recipientId, requestForHelpOnFeature) {
 
       taskElements.push(
         {
-          title: "Ticket 1",
+          title: dataSet.ticket_description,
           subtitle: status[Math.floor(Math.random(0, 2))],
           // image_url: IMG_BASE_PATH + "01-rotate-landscape.png",
           buttons: sectionButtons 
@@ -875,45 +938,6 @@ function callSendAPI(messageData) {
   });  
 }
 
-// ---------------------------------
-// API ROUTES-----
-// // ---------------------------------
-
-app.get('/email', (req, res, next) => {
-  res.render('index')
-})
-
-// Send Email
-app.post('/sendEmailTest', (req, res, next) => {
-  console.log('email sent', req.body.ticket_number)
-  sendEmail({
-    email: 'ankiewicz84@gmail.com',
-    ticketNum: 'TICKET-' + req.body.ticket_number,
-    ticketStatus: req.body.ticket_status,
-    ticket_description: req.body.ticket_description
-  })
-  res.send('email sent')
-})
-
-// Create TICKET
-app.post('/createTicket', (req, res, next) => {
-  var newTicketObj = {
-    ticket_number: req.body.ticket_number,
-    ticket_status: req.body.ticket_status,
-    ticket_description: req.body.ticket_description
-  }
-  Ticket.createTicket(newTicketObj, () => {
-    // calback function
-    res.send('ticket should be created now')
-  })
-})
-
-// // Create TICKET
-app.get('/getTicket/?:ticketNum', (req, res, next) => {
-  Ticket.find({ticket_number: req.params.ticketNum}).exec(function(err, ticket) {
-    res.json(ticket)
-  });
-})
 
 /*
  * Start your server
