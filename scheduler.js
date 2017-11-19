@@ -5,7 +5,9 @@ Schedule Block 12:00-13:00, UTC -1
 Cancel Block 12-2PM
 */
 
-const schedule = require('node-schedule');;
+const schedule = require('node-schedule');
+const sendTextMessage = require('app').sendTextMessage;
+const { createTimeBlock, TimeBlockModel }= require('timeBlockModel')
 
 const parseTime = (timeBlock) => {
   timeBlock = timeBlock.toUpperCase();
@@ -57,14 +59,44 @@ const blockTime = function(recipientId, timeBlock, uTCTime, message) {
   const day = time.getDate();
   const startDate = new Date(year, month, day, timezoneOffset + startHour, startMinutes)
   const stopDate = new Date(year, month, day, timezoneOffset + stopHour, stopMinutes);
-
+  // Creates timeBlock for saving into mongoDB 
+  const newTimeBlock = {
+    timeblock_started: false,
+    timeblock_completed: false,
+    timeblock: timeBlock,
+    timeblock_ucttime: uTCTime,
+    timeblock_recipientID: recipientId  
+  };
+  // createTimeBlock should return the newly created documents Object ID
+  const timeBlockId = createTimeBlock(newTimeBlock);
+  // scheduleState sends a "time block start message" and updates the document. 
   const scheduleStart = schedule.scheduleJob(startDate, function(){
-    console.log('start block');
+    sendTextMessage(recipientId, 'Your timeBlock has started!');
+    TimeBlockModel.find('timeblock_id': timeBlockId, function( err , timeBlockDocument) {
+      if (err) {
+        console.log('Error', err);
+      }
+      timeBlockDocument.timeblock_started = true;
+      TimeBlockModel.save(timeBlockDocument, function(err) {
+        if (err) {
+          console.log('Error', err);
+        }
+      })
+    })
   });
+
   const scheduleStop = schedule.scheduleJob(stopDate, function(){
-    console.log('stop block')
+    sendTextMessage(recipientId, 'Your timeBlock has finished!');
+    TimeBlockModel.find('timeblock_id': timeBlockId, function( err , timeBlockDocument) {
+      if (err) {
+        console.log('Error', err);
+      }
+      timeBlockDocument.timeblock_completed = true;
+      TimeBlockModel.save(timeBlockDocument, function(err) {
+        if (err) {
+          console.log('Error', err);
+        }
+      })
+    })
   });
-}
-
-blockTime('me', '15:11-15:12', '8', 'hey');
-
+};
