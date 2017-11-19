@@ -450,7 +450,7 @@ function getTasks(recipientId, requestForHelpOnFeature) {
 
   if (taskElements.length < 2) {
     console.error("each template should have at least two elements");
-  }
+  } 
   
   var messageData = {
     recipient: {
