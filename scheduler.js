@@ -6,8 +6,8 @@ Cancel Block 12-2PM
 */
 
 const schedule = require('node-schedule');
-const sendTextMessage = require('app').sendTextMessage;
-const { createTimeBlock, TimeBlockModel }= require('timeBlockModel')
+const sendTextMessage = require('./app').sendTextMessage;
+const { createTimeBlock, TimeBlockModel } = require('./timeBlockModel');
 
 const parseTime = (timeBlock) => {
   timeBlock = timeBlock.toUpperCase();
@@ -72,7 +72,7 @@ const blockTime = function(recipientId, timeBlock, uTCTime, message) {
   // scheduleState sends a "time block start message" and updates the document. 
   const scheduleStart = schedule.scheduleJob(startDate, function(){
     sendTextMessage(recipientId, 'Your timeBlock has started!');
-    TimeBlockModel.find('timeblock_id': timeBlockId, function( err , timeBlockDocument) {
+    TimeBlockModel.find(`timeblock_id:${timeBlockId}`, function( err , timeBlockDocument) {
       if (err) {
         console.log('Error', err);
       }
@@ -87,7 +87,7 @@ const blockTime = function(recipientId, timeBlock, uTCTime, message) {
 
   const scheduleStop = schedule.scheduleJob(stopDate, function(){
     sendTextMessage(recipientId, 'Your timeBlock has finished!');
-    TimeBlockModel.find('timeblock_id': timeBlockId, function( err , timeBlockDocument) {
+    TimeBlockModel.find(`timeblock_id:${timeBlockId}`, function( err , timeBlockDocument) {
       if (err) {
         console.log('Error', err);
       }
